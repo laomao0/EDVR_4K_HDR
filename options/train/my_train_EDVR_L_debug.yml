@@ -1,0 +1,99 @@
+#### general settings
+name: train_edvr_debug
+use_tb_logger: true
+model: video_base
+distortion: sr
+scale: 4
+#gpu_ids: [0,1,2,3,4,5,6,7]
+gpu_ids: [6]
+
+#### datasets
+datasets:
+  train:
+    name: REDS
+    mode: REDS
+    interval_list: [1]
+    frame_notation: /DATA7_DB7/data/4khdr/data/Dataset/4khdr_frame_notation.json
+    random_reverse: false
+    border_mode: false
+    dataroot_GT: /DATA7_DB7/data/4khdr/data/Dataset/train_4k_all.lmdb
+    dataroot_LQ: /DATA7_DB7/data/4khdr/data/Dataset/train_540p_all.lmdb
+    cache_keys: ~
+
+    N_frames: 5
+    use_shuffle: true
+    n_workers: 1  # per GPU
+    batch_size: 1
+    GT_size: 512 #256
+    LQ_size: 128   # 64
+    use_flip: true
+    use_rot: true
+    color: RGB
+  val:
+    name: REDS4
+    mode: video_test
+    dataroot_GT: /DATA7_DB7/data/4khdr/data/Dataset/val_4k
+    dataroot_LQ: /DATA7_DB7/data/4khdr/data/Dataset/val_540p
+    use_all_folders : false  # use all folders for validation, otherwise use the first folder
+    cache_data: true
+    frame_notation: /DATA7_DB7/data/4khdr/data/Dataset/4khdr_frame_notation.json
+    N_frames: 5
+    padding: new_info
+    save_path: /DATA7_DB7/data/4khdr/data/Results/results
+
+#### network structures
+#network_G:
+#  which_model_G: EDVR
+#  nf: 64
+#  nframes: 5
+#  groups: 8
+#  front_RBs: 5
+#  back_RBs: 10
+#  predeblur: false
+#  HR_in: false
+#  w_TSA: false
+
+
+network_G:
+  which_model_G: EDVR
+  nf: 128
+  nframes: 5
+  groups: 8
+  front_RBs: 5
+  back_RBs: 40
+  predeblur: false
+  HR_in: false
+  w_TSA: true
+
+#### path
+path:
+  pretrain_model_G: /DATA5_DB8/data/4khdr/codes/experiments/001_EDVRwTSA_scratch_lr4e-4_600k_4KHDR_archived_191102-132426/models/latest_G.pth
+  strict_load: true
+  resume_state: ~
+
+#### training settings: learning rate scheme, loss
+# TODO
+train:
+  lr_G: !!float 1e-4
+  lr_scheme: CosineAnnealingLR_Restart
+  beta1: 0.9
+  beta2: 0.99
+#  niter: 700000 # 600000
+  epoch: 100
+  warmup_iter: -1  # -1: no warm up
+  T_period: [150000, 150000, 150000, 150000]
+  restarts: [150000, 300000, 450000]
+  restart_weights: [1, 1, 1]
+  eta_min: !!float 1e-7
+
+  pixel_criterion: cb
+  pixel_weight: 1.0
+  val_freq: !!float  2000 #5e3
+
+  manual_seed: 0
+#  TODO end
+
+#### logger
+logger:
+  print_freq:  10 #100
+  save_checkpoint_freq: !!float 10000 #5e3

@@ -1,0 +1,110 @@
+#### general settings
+name: train_EDVR_L_Preload_30000_nobug_ssim_predeblur_parral_suzhou_1
+use_tb_logger: true
+model: video_base
+distortion: sr
+scale: 4
+#gpu_ids: [0,1,2,3,4,5,6,7]
+gpu_ids: [1]
+
+
+#### datasets
+datasets:
+  train:
+    name: REDS
+    mode: REDS
+    interval_list: [1]
+    frame_notation: /mnt/lustre/shanghai/cmic/home/xyz18/Dataset/4khdr_frame_notation.json
+    random_reverse: false
+    border_mode: false
+    dataroot_GT: /mnt/lustre/shanghai/cmic/home/xyz18/Dataset/train_4k_all.lmdb
+    dataroot_LQ: /mnt/lustre/shanghai/cmic/home/xyz18/Dataset/train_540p_all.lmdb
+    cache_keys: ~
+    all_dataset_for_train: true
+    ignore_blank: true
+    baddata_list: ['10099858', '10601634', '14434433', '15922480', '16069648', '18617801', '19869273', '20076061',
+                   '25368136', '28688087', '32490669', '41530731', '43313186', '51780526', '54798383', '56094134',
+                   '62703138', '66387320', '76274236', '84009993', '86742292', '91711511', '93818806', '95347520',
+                   '97752154']
+    #data_type: lmdb
+    N_frames: 5
+    use_shuffle: true
+    n_workers: 6  # per GPU
+    batch_size: 8
+    GT_size: 512 #1024 #256
+    LQ_size: 128 #256   # 64
+    use_flip: true
+    use_rot: true
+    color: RGB
+#  val
+#    name: REDS4`
+#    mode: video_test
+#    dataroot_GT: /DATA7_DB7/data/4khdr/data/Dataset/val_4k
+#    dataroot_LQ: /DATA7_DB7/data/4khdr/data/Dataset/val_540p
+#    use_all_folders : false  # use all folders for validation, otherwise use the first folder
+#    cache_data: true
+#    frame_notation: /DATA7_DB7/data/4khdr/data/Dataset/4khdr_frame_notation.json
+#    N_frames: 5
+#    padding: new_info
+#    save_path: /DATA7_DB7/data/4khdr/data/Results/results
+
+#### network structures
+#network_G:
+#  which_model_G: EDVR
+#  nf: 64
+#  nframes: 5
+#  groups: 8
+#  front_RBs: 5
+#  back_RBs: 10
+#  predeblur: false
+#  HR_in: false
+#  w_TSA: false
+
+
+network_G:
+  which_model_G: EDVR
+  nf: 128
+  nframes: 5
+  groups: 8
+  front_RBs: 5
+  back_RBs: 40
+  predeblur: true
+  HR_in: false
+  w_TSA: true
+
+#### path
+path:
+  pretrain_model_G: /mnt/lustre/shanghai/cmic/home/xyz18/experiments/train_EDVR_L_Preload_30000_nobug_ssim_predeblur_parral_suzhou/models/latest_G.pth
+  save_path : /mnt/lustre/shanghai/cmic/home/xyz18/
+  strict_load: true
+  resume_state: ~
+
+#### training settings: learning rate scheme, loss
+# TODO
+train:
+  lr_G: !!float 1e-4
+  lr_scheme: CosineAnnealingLR_Restart
+  beta1: 0.9
+  beta2: 0.99
+#  niter: 700000 # 600000
+  epoch: 100
+  warmup_iter: -1  # -1: no warm up
+#  T_period: [17500, 17500, 17500, 17500]
+#  restarts: [17500, 35000, 52500]
+  T_period: [8400, 8400, 8400, 8400]
+  restarts: [8400, 16800, 33600]
+  restart_weights: [1, 1, 1]
+  eta_min: !!float 1e-7
+
+  pixel_criterion: cb+ssim
+  pixel_weight: 1.0
+  ssim_weight: 1.0
+  val_freq: !!float  1e4 #5e3
+
+  manual_seed: 0
+#  TODO end
+
+#### logger
+logger:
+  print_freq:  10 #100
+  save_checkpoint_freq: !!float 5000 #5e3
